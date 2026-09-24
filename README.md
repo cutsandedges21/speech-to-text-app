@@ -10,6 +10,8 @@ Live speech-to-text that runs OpenAI's Whisper model on your phone, inside Safar
 
 Grey italic text is the sentence you're still speaking and may still change. It turns solid black once you pause.
 
+Each tap of the mic makes a new recording. Tap ≡ to see your recordings, make folders, and use a folder's ⋯ menu to record straight into it. Tap a recording's title to rename it, and use the "in … ▾" picker to move it. Recordings are stored on the phone only.
+
 ## Develop
 
 ```bash
@@ -40,7 +42,10 @@ mic ──► audio/mic.ts ──► live/liveTranscriber.ts ──► engine/wh
 | `src/live/liveTranscriber.ts` | Runs the model one job at a time; finished sentences are never dropped |
 | `src/live/filter.ts` | Removes Whisper's silence junk (`[BLANK_AUDIO]`, a lone "Thank you.") |
 | `src/engine/whisper.worker.ts` | Loads and runs the model |
-| `src/live/useLiveTranscriber.ts` | React hook that wires it all into the UI |
+| `src/live/useLiveTranscriber.ts` | React hook: mic + engine, one live transcriber per recording session |
+| `src/library/library.ts` | Folders and recordings as pure functions (add, rename, move, delete, titles) |
+| `src/library/store.ts` | Saves the library to localStorage; the one file to change for IndexedDB |
+| `src/components/SideNav.tsx` | Folder drawer (phone) / sidebar (900 px and wider) |
 
 ## Upgrades
 
