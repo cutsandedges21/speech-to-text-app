@@ -17,10 +17,10 @@ Add a side nav where the user can create folders and organize their transcribed 
 
 ## Behavior
 
-1. Tapping the mic creates a new recording in the folder of the recording on screen (Unfiled if none is open) and opens it. Text is saved as each sentence locks in. A session that ends with no text is deleted.
+1. Tapping the mic creates a new recording in the folder of the recording on screen and opens it. On the blank recorder screen (no recording open), it uses the folder chosen in that screen's picker (Unfiled by default). Text is saved as each sentence locks in. A session that ends with no text is deleted.
 2. Title: the first ~6 words of the text until the user renames it (tap the title → native prompt). An empty title reverts to the automatic one.
-3. A folder picker under the title (native `<select>`) moves the open recording.
-4. Side nav, top to bottom: "+ New folder"; folders sorted by name, each with a count, tap to expand/collapse, "⋯" → Rename / Delete; an Unfiled section. Recordings within a group are sorted newest first, shown as title + date. The open recording is highlighted.
+3. A folder picker under the title (native `<select>`) moves the open recording. On the blank recorder screen, the same picker sets where the next recording goes.
+4. Side nav, top to bottom: "New recording" (opens the blank recorder) and "+ Folder"; folders sorted by name, each with a count, tap to expand/collapse, "⋯" → New recording here / Rename / Delete; an Unfiled section. Recordings within a group are sorted newest first, shown as title + date. The open recording is highlighted.
 5. Deleting a folder moves its recordings to Unfiled. Confirmed with a native dialog.
 6. Dock: Delete (two-tap, removes the open recording) · Mic · Copy.
 7. On first launch after the update, the old single transcript (`speech-to-text:transcript`) becomes one recording in Unfiled, then the old key is removed.
