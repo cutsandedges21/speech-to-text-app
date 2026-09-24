@@ -10,10 +10,13 @@ export function TranscriptView({ committed, draft, listening }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   // Follow new text only while the reader is already at the bottom.
   const pinned = useRef(true)
+  // An opened recording starts at the top; only new text scrolls.
+  const mounted = useRef(false)
 
   useLayoutEffect(() => {
     const el = ref.current
-    if (el && pinned.current) el.scrollTop = el.scrollHeight
+    if (el && mounted.current && pinned.current) el.scrollTop = el.scrollHeight
+    mounted.current = true
   }, [committed, draft])
 
   const onScroll = () => {

@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { MicError, startMic, type Mic } from '../audio/mic'
 import { rms } from '../audio/silence'
 import { WhisperEngine } from '../engine/whisperEngine'
-import { loadTranscript, saveTranscript } from '../storage/transcript'
-import { LiveTranscriber, type LiveText } from './liveTranscriber'
+import { LiveTranscriber } from './liveTranscriber'
 
 export type Status = 'loading' | 'load-failed' | 'ready' | 'starting' | 'listening'
 
@@ -15,17 +14,39 @@ const MIC_MESSAGES: Record<MicError['kind'], string> = {
   other: "Couldn't start the microphone.",
 }
 
-/** Wires the mic, the Whisper engine and the live transcriber into React state. */
-export function useLiveTranscriber() {
+export interface LiveTranscriberCallbacks {
+  /** Finished sentences for a recording so far. Can arrive after stop(). */
+  onText: (recordingId: string, committed: string) => void
+  /** Every sentence of the session has been transcribed. */
+  onSessionEnd: (recordingId: string) => void
+}
+
+interface Session {
+  recordingId: string
+  live: LiveTranscriber
+  ended: boolean
+}
+
+/**
+ * Wires the mic and the Whisper engine into React state. Each mic session
+ * gets its own LiveTranscriber bound to one recording, so a sentence that
+ * finishes after Stop still lands in the right recording.
+ */
+export function useLiveTranscriber(callbacks: LiveTranscriberCallbacks) {
   const [status, setStatus] = useState<Status>('loading')
   const [progress, setProgress] = useState(0)
-  const [text, setText] = useState<LiveText>(() => ({ committed: loadTranscript(), draft: '' }))
+  const [draft, setDraft] = useState<{ recordingId: string; text: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [level, setLevel] = useState(0)
 
   const engineRef = useRef<WhisperEngine | null>(null)
-  const liveRef = useRef<LiveTranscriber | null>(null)
   const micRef = useRef<Mic | null>(null)
+  const sessionRef = useRef<Session | null>(null)
+  // Read through a ref so late results never call a stale callback.
+  const callbacksRef = useRef(callbacks)
+  useEffect(() => {
+    callbacksRef.current = callbacks
+  })
 
   const loadModel = useCallback(() => {
     const engine = engineRef.current
@@ -43,12 +64,6 @@ export function useLiveTranscriber() {
   useEffect(() => {
     const engine = new WhisperEngine()
     engineRef.current = engine
-    liveRef.current = new LiveTranscriber({
-      engine,
-      onChange: setText,
-      onError: () => setError("Missed a bit there. Keep talking and it'll pick back up."),
-      initialText: loadTranscript(),
-    })
     loadModel()
     return () => {
       void micRef.current?.stop()
@@ -58,38 +73,67 @@ export function useLiveTranscriber() {
     }
   }, [loadModel])
 
-  useEffect(() => saveTranscript(text.committed), [text.committed])
+  const endSession = useCallback((session: Session) => {
+    if (session.ended) return
+    session.ended = true
+    session.live.stop()
+    void session.live.idle().then(() => callbacksRef.current.onSessionEnd(session.recordingId))
+  }, [])
 
   const stop = useCallback(() => {
     void micRef.current?.stop()
     micRef.current = null
-    liveRef.current?.stop()
+    if (sessionRef.current) endSession(sessionRef.current)
     setLevel(0)
     setStatus((s) => (s === 'listening' || s === 'starting' ? 'ready' : s))
-  }, [])
+  }, [endSession])
 
-  /** Must be called directly from a tap so iOS allows audio to start. */
-  const start = useCallback(() => {
-    const live = liveRef.current
-    if (!live) return
-    setError(null)
-    setStatus('starting')
-    startMic({
-      onAudio: (chunk) => {
-        live.pushAudio(chunk)
-        setLevel(rms(chunk))
-      },
-      onEnded: stop,
-    })
-      .then((mic) => {
-        micRef.current = mic
-        setStatus('listening')
+  /** Records into `recordingId`. Must be called directly from a tap so iOS allows audio to start. */
+  const start = useCallback(
+    (recordingId: string) => {
+      const engine = engineRef.current
+      if (!engine) return
+
+      let saved = ''
+      const session: Session = {
+        recordingId,
+        ended: false,
+        live: new LiveTranscriber({
+          engine,
+          onChange: (text) => {
+            if (text.committed !== saved) {
+              saved = text.committed
+              callbacksRef.current.onText(recordingId, text.committed)
+            }
+            if (sessionRef.current === session) setDraft({ recordingId, text: text.draft })
+          },
+          onError: () => setError("Missed a bit there. Keep talking and it'll pick back up."),
+        }),
+      }
+      sessionRef.current = session
+      setDraft(null)
+      setError(null)
+      setStatus('starting')
+
+      startMic({
+        onAudio: (chunk) => {
+          session.live.pushAudio(chunk)
+          setLevel(rms(chunk))
+        },
+        onEnded: stop,
       })
-      .catch((err: unknown) => {
-        setStatus('ready')
-        setError(err instanceof MicError ? MIC_MESSAGES[err.kind] : MIC_MESSAGES.other)
-      })
-  }, [stop])
+        .then((mic) => {
+          micRef.current = mic
+          setStatus('listening')
+        })
+        .catch((err: unknown) => {
+          endSession(session)
+          setStatus('ready')
+          setError(err instanceof MicError ? MIC_MESSAGES[err.kind] : MIC_MESSAGES.other)
+        })
+    },
+    [stop, endSession],
+  )
 
   // iOS cuts the mic when the app goes to the background; finish the sentence cleanly.
   useEffect(() => {
@@ -100,7 +144,5 @@ export function useLiveTranscriber() {
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [stop])
 
-  const clear = useCallback(() => liveRef.current?.clear(), [])
-
-  return { status, progress, text, error, level, start, stop, clear, retryLoad: loadModel }
+  return { status, progress, draft, error, level, start, stop, retryLoad: loadModel }
 }
