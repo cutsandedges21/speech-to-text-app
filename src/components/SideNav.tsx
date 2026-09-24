@@ -121,7 +121,7 @@ export function SideNav({
               menu={
                 <>
                   <button type="button" className="chip" onClick={act(() => onNewRecording(folder.id))}>
-                    New recording here
+                    Record here
                   </button>
                   <button type="button" className="chip" onClick={act(() => onRenameFolder(folder.id))}>
                     Rename

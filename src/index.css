@@ -39,6 +39,9 @@ body {
   height: 100%;
   background: var(--paper);
   color: var(--ink);
+  /* The page never scrolls; the transcript and side nav scroll inside it.
+     Also keeps the voice ring from nudging the page when it grows. */
+  overflow: hidden;
   overscroll-behavior: none;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
