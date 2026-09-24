@@ -39,6 +39,14 @@ describe('appendText', () => {
     expect(appendText('Hello.', 'How are you?')).toBe('Hello. How are you?')
   })
 
+  test('capitalizes a sentence that follows a full stop', () => {
+    expect(appendText('Can do for you.', 'ask what you can do')).toBe('Can do for you. Ask what you can do')
+  })
+
+  test('leaves the case alone when the previous sentence is unfinished', () => {
+    expect(appendText('And so', 'my fellow Americans')).toBe('And so my fellow Americans')
+  })
+
   test('ignores empty text', () => {
     expect(appendText('Hello.', '')).toBe('Hello.')
   })

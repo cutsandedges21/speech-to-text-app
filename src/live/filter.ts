@@ -26,5 +26,8 @@ export function cleanTranscript(raw: string): string {
 
 export function appendText(transcript: string, text: string): string {
   if (!text) return transcript
-  return transcript ? `${transcript} ${text}` : text
+  if (!transcript) return text
+  // Each sentence is transcribed alone, so Whisper can't know one just ended.
+  const next = /[.!?]$/.test(transcript) ? text[0].toUpperCase() + text.slice(1) : text
+  return `${transcript} ${next}`
 }
