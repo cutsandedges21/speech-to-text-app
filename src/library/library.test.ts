@@ -11,6 +11,8 @@ import {
   recordingTitle,
   renameFolder,
   renameRecording,
+  restoreFolder,
+  restoreRecording,
   setRecordingText,
   type Library,
   type Recording,
@@ -55,6 +57,27 @@ describe('folders', () => {
     expect(lib.folders).toEqual([])
     expect(find(lib, 'r1')?.folderId).toBeNull()
     expect(lib.recordings).toHaveLength(2)
+  })
+
+  test('restoreFolder brings the folder and its recordings back', () => {
+    const before = sample()
+    const lib = restoreFolder(deleteFolder(before, 'f1'), before.folders[0], ['r1'])
+    expect(lib.folders).toEqual(before.folders)
+    expect(find(lib, 'r1')?.folderId).toBe('f1')
+  })
+
+  test('restoreFolder leaves a recording that was moved somewhere else since', () => {
+    const before = sample()
+    let lib = deleteFolder(before, 'f1')
+    lib = addFolder(lib, 'Work', 'f2', 400)
+    lib = moveRecording(lib, 'r1', 'f2')
+    lib = restoreFolder(lib, before.folders[0], ['r1'])
+    expect(find(lib, 'r1')?.folderId).toBe('f2')
+  })
+
+  test('restoreFolder ignores a folder that still exists', () => {
+    const lib = sample()
+    expect(restoreFolder(lib, lib.folders[0], [])).toBe(lib)
   })
 })
 
@@ -105,6 +128,26 @@ describe('recordings', () => {
 
   test('deleteRecording removes it', () => {
     expect(find(deleteRecording(sample(), 'r1'), 'r1')).toBeUndefined()
+  })
+
+  test('restoreRecording puts a deleted recording back', () => {
+    const before = sample()
+    const r1 = find(before, 'r1')!
+    const lib = restoreRecording(deleteRecording(before, 'r1'), r1)
+    expect(find(lib, 'r1')).toEqual(r1)
+  })
+
+  test('restoreRecording sends it to Unfiled when its folder is gone', () => {
+    const before = sample()
+    let lib = deleteRecording(before, 'r1')
+    lib = deleteFolder(lib, 'f1')
+    lib = restoreRecording(lib, find(before, 'r1')!)
+    expect(find(lib, 'r1')?.folderId).toBeNull()
+  })
+
+  test('restoreRecording ignores a recording that is still there', () => {
+    const lib = sample()
+    expect(restoreRecording(lib, find(lib, 'r1')!)).toBe(lib)
   })
 
   test('deleteIfEmpty removes a recording with no words', () => {

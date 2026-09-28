@@ -11,9 +11,9 @@ export default defineConfig({
       // Icons are generated from public/logo.svg (see pwa-assets.config.ts)
       pwaAssets: { config: true, overrideManifestIcons: true, injectThemeColor: false },
       manifest: {
-        name: 'Speech to Text',
-        short_name: 'Transcribe',
-        description: 'Live speech-to-text that runs Whisper on your phone. Free, private, works offline.',
+        name: 'utter',
+        short_name: 'utter',
+        description: 'Live speech-to-text that runs on your phone. Free, private, works offline.',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

@@ -1,5 +1,8 @@
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { recordingTitle, type FolderGroup, type Recording } from '../library/library'
+import { collapse, snappy, soft } from '../motion'
+import { SwipeRow } from './SwipeRow'
 
 const UNFILED = 'unfiled'
 
@@ -16,12 +19,16 @@ interface Props {
   /** Folder of the open recording (null = Unfiled); expanded automatically. */
   openFolderId: string | null
   isOpen: boolean
+  /** A dialog is open on top. */
+  inert: boolean
   onClose: () => void
   onOpenRecording: (id: string) => void
   onNewRecording: (folderId: string | null) => void
   onAddFolder: () => void
   onRenameFolder: (id: string) => void
   onDeleteFolder: (id: string) => void
+  onRenameRecording: (id: string) => void
+  onDeleteRecording: (id: string) => void
 }
 
 export function SideNav({
@@ -29,15 +36,20 @@ export function SideNav({
   openId,
   openFolderId,
   isOpen,
+  inert,
   onClose,
   onOpenRecording,
   onNewRecording,
   onAddFolder,
   onRenameFolder,
   onDeleteFolder,
+  onRenameRecording,
+  onDeleteRecording,
 }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set([UNFILED]))
   const [menuFor, setMenuFor] = useState<string | null>(null)
+  /** The one recording row swiped open, if any. */
+  const [swiped, setSwiped] = useState<string | null>(null)
 
   // Opening a recording from anywhere reveals its folder.
   const openKey = openId ? (openFolderId ?? UNFILED) : null
@@ -52,6 +64,13 @@ export function SideNav({
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
 
+  // A closed drawer shouldn't reopen with a row still swiped.
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (!isOpen) setSwiped(null)
+  }
+
   const toggle = (key: string) =>
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -60,26 +79,47 @@ export function SideNav({
       return next
     })
 
-  const list = (recordings: Recording[]) =>
-    recordings.length === 0 ? (
-      <p className="group-empty">Nothing here yet</p>
-    ) : (
+  // The list stays mounted when it empties, so the last row can still animate out.
+  const list = (recordings: Recording[]) => (
+    <>
+      <AnimatePresence initial={false}>
+        {recordings.length === 0 && (
+          <motion.div key="empty" className="collapse-wrap" {...collapse}>
+            <p className="group-empty">Nothing here yet</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <ul className="rec-list">
-        {recordings.map((r) => (
-          <li key={r.id}>
-            <button
-              type="button"
-              className="rec-row"
-              aria-current={r.id === openId ? 'true' : undefined}
-              onClick={() => onOpenRecording(r.id)}
+        <AnimatePresence initial={false}>
+          {recordings.map((r) => (
+            <motion.li
+              key={r.id}
+              className="rec-item"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0, x: -48 }}
+              transition={{ height: soft, opacity: { duration: 0.22 }, x: soft }}
             >
-              <span className="rec-title">{recordingTitle(r)}</span>
-              <span className="rec-date">{formatDate.format(r.createdAt)}</span>
-            </button>
-          </li>
-        ))}
+              <SwipeRow
+                open={swiped === r.id}
+                onOpenChange={(open) => setSwiped(open ? r.id : (cur) => (cur === r.id ? null : cur))}
+                onTap={() => onOpenRecording(r.id)}
+                onRename={() => onRenameRecording(r.id)}
+                onDelete={() => {
+                  setSwiped(null)
+                  onDeleteRecording(r.id)
+                }}
+                current={r.id === openId}
+              >
+                <span className="rec-title">{recordingTitle(r)}</span>
+                <span className="rec-date">{formatDate.format(r.createdAt)}</span>
+              </SwipeRow>
+            </motion.li>
+          ))}
+        </AnimatePresence>
       </ul>
-    )
+    </>
+  )
 
   const act = (action: () => void) => () => {
     setMenuFor(null)
@@ -89,7 +129,7 @@ export function SideNav({
   return (
     <>
       <div className={`scrim${isOpen ? ' is-open' : ''}`} onClick={onClose} aria-hidden="true" />
-      <nav className={`sidenav${isOpen ? ' is-open' : ''}`} aria-label="Recordings">
+      <nav className={`sidenav${isOpen ? ' is-open' : ''}`} aria-label="Recordings" inert={inert || undefined}>
         <div className="sidenav-head">
           <span className="sidenav-title">Recordings</span>
           <button type="button" className="icon-btn sidenav-close" onClick={onClose} aria-label="Close menu">
@@ -109,32 +149,35 @@ export function SideNav({
         </div>
 
         <div className="sidenav-scroll">
-          {groups.folders.map(({ folder, recordings }) => (
-            <Group
-              key={folder.id}
-              name={folder.name}
-              count={recordings.length}
-              expanded={expanded.has(folder.id)}
-              onToggle={() => toggle(folder.id)}
-              menuOpen={menuFor === folder.id}
-              onMenu={() => setMenuFor(menuFor === folder.id ? null : folder.id)}
-              menu={
-                <>
-                  <button type="button" className="chip" onClick={act(() => onNewRecording(folder.id))}>
-                    Record here
-                  </button>
-                  <button type="button" className="chip" onClick={act(() => onRenameFolder(folder.id))}>
-                    Rename
-                  </button>
-                  <button type="button" className="chip is-danger" onClick={act(() => onDeleteFolder(folder.id))}>
-                    Delete
-                  </button>
-                </>
-              }
-            >
-              {list(recordings)}
-            </Group>
-          ))}
+          <AnimatePresence initial={false}>
+            {groups.folders.map(({ folder, recordings }) => (
+              <motion.div key={folder.id} {...collapse} className="group-wrap">
+                <Group
+                  name={folder.name}
+                  count={recordings.length}
+                  expanded={expanded.has(folder.id)}
+                  onToggle={() => toggle(folder.id)}
+                  menuOpen={menuFor === folder.id}
+                  onMenu={() => setMenuFor(menuFor === folder.id ? null : folder.id)}
+                  menu={
+                    <>
+                      <button type="button" className="chip" onClick={act(() => onNewRecording(folder.id))}>
+                        Record here
+                      </button>
+                      <button type="button" className="chip" onClick={act(() => onRenameFolder(folder.id))}>
+                        Rename
+                      </button>
+                      <button type="button" className="chip is-danger" onClick={act(() => onDeleteFolder(folder.id))}>
+                        Delete
+                      </button>
+                    </>
+                  }
+                >
+                  {list(recordings)}
+                </Group>
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           <Group
             name="Unfiled"
@@ -170,20 +213,48 @@ function Group({ name, count, expanded, onToggle, children, menu, menuOpen, onMe
             <path d="M9 5l7 7-7 7" />
           </svg>
           <span className="group-name">{name}</span>
-          <span className="group-count">{count}</span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={count}
+              className="group-count"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={snappy}
+            >
+              {count}
+            </motion.span>
+          </AnimatePresence>
         </button>
         {menu && (
-          <button type="button" className="icon-btn" aria-label={`${name} options`} aria-expanded={menuOpen} onClick={onMenu}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-              <circle cx="5" cy="12" r="1.7" />
-              <circle cx="12" cy="12" r="1.7" />
-              <circle cx="19" cy="12" r="1.7" />
-            </svg>
+          // Three dots that fold into an X while the menu is open, so it reads as "tap to close".
+          <button
+            type="button"
+            className={`icon-btn dots${menuOpen ? ' is-open' : ''}`}
+            aria-label={menuOpen ? `Close ${name} options` : `${name} options`}
+            aria-expanded={menuOpen}
+            onClick={onMenu}
+          >
+            <span className="dot dot-a" aria-hidden="true" />
+            <span className="dot dot-b" aria-hidden="true" />
+            <span className="dot dot-c" aria-hidden="true" />
           </button>
         )}
       </div>
-      {menuOpen && <div className="group-menu">{menu}</div>}
-      {expanded && children}
+      <AnimatePresence initial={false}>
+        {menuOpen && (
+          <motion.div key="menu" className="group-menu-wrap" {...collapse}>
+            <div className="group-menu">{menu}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div key="body" className="group-body" {...collapse}>
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

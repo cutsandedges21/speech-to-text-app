@@ -3,14 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Speech to Text</title>
-    <meta name="description" content="Live speech-to-text that runs Whisper on your phone. Free, private, works offline." />
-    <meta name="theme-color" content="#f3eee3" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#161512" media="(prefers-color-scheme: dark)" />
+    <title>utter</title>
+    <meta name="description" content="Live speech-to-text that runs on your phone. Free, private, works offline." />
+    <meta name="theme-color" content="#f3eee3" />
+    <!-- Theme before the first paint, so dark mode never flashes light on load.
+         Same key as THEME_STORAGE_KEY in src/theme/themeStore.ts. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('utter:theme')
+          var dark = stored === 'dark' || (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+          var root = document.documentElement
+          root.classList.toggle('dark', dark)
+          root.style.colorScheme = dark ? 'dark' : 'light'
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#161512' : '#f3eee3')
+        } catch (e) {}
+      })()
+    </script>
     <!-- iOS home screen: without these, iOS makes a Safari bookmark and the built-in mic can record silence -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Transcribe" />
+    <meta name="apple-mobile-web-app-title" content="utter" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   </head>
   <body>

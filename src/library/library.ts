@@ -58,6 +58,20 @@ export function deleteFolder(lib: Library, id: string): Library {
   }
 }
 
+/**
+ * Undo for deleteFolder: the folder comes back with the recordings it had.
+ * A recording moved to another folder since then stays where it is now.
+ */
+export function restoreFolder(lib: Library, folder: Folder, recordingIds: string[]): Library {
+  if (lib.folders.some((f) => f.id === folder.id)) return lib
+  const ids = new Set(recordingIds)
+  return {
+    ...lib,
+    folders: [...lib.folders, folder],
+    recordings: lib.recordings.map((r) => (ids.has(r.id) && r.folderId === null ? { ...r, folderId: folder.id } : r)),
+  }
+}
+
 export function addRecording(lib: Library, id: string, folderId: string | null, now: number): Library {
   const recording: Recording = { id, folderId, title: null, text: '', createdAt: now, updatedAt: now }
   return { ...lib, recordings: [...lib.recordings, recording] }
@@ -84,6 +98,13 @@ export function moveRecording(lib: Library, id: string, folderId: string | null)
 
 export function deleteRecording(lib: Library, id: string): Library {
   return { ...lib, recordings: lib.recordings.filter((r) => r.id !== id) }
+}
+
+/** Undo for deleteRecording. If its folder was deleted meanwhile, it lands in Unfiled. */
+export function restoreRecording(lib: Library, recording: Recording): Library {
+  if (lib.recordings.some((r) => r.id === recording.id)) return lib
+  const folderId = lib.folders.some((f) => f.id === recording.folderId) ? recording.folderId : null
+  return { ...lib, recordings: [...lib.recordings, { ...recording, folderId }] }
 }
 
 /** Used when a mic session ends: a recording where nothing was said isn't worth keeping. */

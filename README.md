@@ -1,4 +1,4 @@
-# Speech to Text
+# utter
 
 Live speech-to-text that runs OpenAI's Whisper model on your phone, inside Safari. No server, no API key, no cost. Add it to the iPhone home screen and it behaves like an app. After the first launch it works offline.
 
