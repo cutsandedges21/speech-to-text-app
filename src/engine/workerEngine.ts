@@ -6,8 +6,8 @@ interface Pending<T> {
   reject: (error: Error) => void
 }
 
-/** Runs Whisper in a web worker so the UI never freezes during a pass. */
-export class WhisperEngine implements SpeechEngine {
+/** Runs the speech model in a web worker so the UI never freezes during a pass. */
+export class WorkerEngine implements SpeechEngine {
   private readonly worker: Worker
   private readonly pending = new Map<number, Pending<string>>()
   private loading: (Pending<void> & { onProgress?: (fraction: number) => void }) | null = null
@@ -15,7 +15,7 @@ export class WhisperEngine implements SpeechEngine {
   private nextId = 0
 
   constructor() {
-    this.worker = new Worker(new URL('./whisper.worker.ts', import.meta.url), { type: 'module' })
+    this.worker = new Worker(new URL('./speech.worker.ts', import.meta.url), { type: 'module' })
     this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => this.handle(event.data)
     this.worker.onerror = (event) => this.failAll(new Error(event.message || 'Speech model crashed'))
   }

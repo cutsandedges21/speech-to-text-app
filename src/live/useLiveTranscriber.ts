@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MicError, startMic, type Mic } from '../audio/mic'
 import { rms } from '../audio/silence'
-import { WhisperEngine } from '../engine/whisperEngine'
+import { WorkerEngine } from '../engine/workerEngine'
 import { LiveTranscriber } from './liveTranscriber'
 
 export type Status = 'loading' | 'load-failed' | 'ready' | 'starting' | 'listening'
@@ -28,7 +28,7 @@ interface Session {
 }
 
 /**
- * Wires the mic and the Whisper engine into React state. Each mic session
+ * Wires the mic and the speech engine into React state. Each mic session
  * gets its own LiveTranscriber bound to one recording, so a sentence that
  * finishes after Stop still lands in the right recording.
  */
@@ -39,7 +39,7 @@ export function useLiveTranscriber(callbacks: LiveTranscriberCallbacks) {
   const [error, setError] = useState<string | null>(null)
   const [level, setLevel] = useState(0)
 
-  const engineRef = useRef<WhisperEngine | null>(null)
+  const engineRef = useRef<WorkerEngine | null>(null)
   const micRef = useRef<Mic | null>(null)
   const sessionRef = useRef<Session | null>(null)
   // Read through a ref so late results never call a stale callback.
@@ -62,7 +62,7 @@ export function useLiveTranscriber(callbacks: LiveTranscriberCallbacks) {
   }, [])
 
   useEffect(() => {
-    const engine = new WhisperEngine()
+    const engine = new WorkerEngine()
     engineRef.current = engine
     loadModel()
     return () => {

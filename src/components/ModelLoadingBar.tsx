@@ -26,7 +26,7 @@ export function ModelLoadingBar({ progress, failed, onRetry }: Props) {
       <div className="loader-track">
         <div className="loader-fill" style={{ transform: `scaleX(${progress})` }} />
       </div>
-      <p className="loader-note">One time, about 44 MB. After this it works offline.</p>
+      <p className="loader-note">One time, about 63 MB. After this it works offline.</p>
     </div>
   )
 }

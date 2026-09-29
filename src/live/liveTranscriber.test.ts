@@ -127,20 +127,23 @@ describe('LiveTranscriber', () => {
   })
 
   test('reports a model error and keeps working', async () => {
-    let calls = 0
+    let broken = true
     const { live, onError } = setup({
       transcribe: async () => {
-        if (calls++ === 0) throw new Error('boom')
+        if (broken) throw new Error('boom')
         return 'B.'
       },
     })
-    feed(live, 0.3, 0.2) // short enough that no draft runs
-    feed(live, 0.7, 0) // first final fails
+    feed(live, 0.3, 0.2)
+    feed(live, 0.7, 0) // this sentence's draft and final both fail
     await live.idle()
+    expect(onError).toHaveBeenCalled()
+    expect(live.text.committed).toBe('')
+
+    broken = false
     feed(live, 0.3, 0.2)
     feed(live, 0.7, 0)
     await live.idle()
-    expect(onError).toHaveBeenCalledOnce()
     expect(live.text.committed).toBe('B.')
   })
 })

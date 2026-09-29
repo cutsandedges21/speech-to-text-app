@@ -1,4 +1,4 @@
-/** Messages between the app and the Whisper web worker. */
+/** Messages between the app and the speech model's web worker. */
 export type WorkerRequest =
   | { type: 'load' }
   | { type: 'transcribe'; id: number; audio: Float32Array }

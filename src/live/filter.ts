@@ -1,5 +1,5 @@
 /**
- * Phrases Whisper invents when it hears silence or noise (it was trained on
+ * Phrases Whisper-style models invent when it hears silence or noise (it was trained on
  * subtitled videos). Dropped only when they make up the whole result.
  */
 const HALLUCINATIONS = new Set([
@@ -27,7 +27,7 @@ export function cleanTranscript(raw: string): string {
 export function appendText(transcript: string, text: string): string {
   if (!text) return transcript
   if (!transcript) return text
-  // Each sentence is transcribed alone, so Whisper can't know one just ended.
+  // Each sentence is transcribed alone, so the model can't know one just ended.
   const next = /[.!?]$/.test(transcript) ? text[0].toUpperCase() + text.slice(1) : text
   return `${transcript} ${next}`
 }

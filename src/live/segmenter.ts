@@ -4,7 +4,7 @@ export interface SegmenterOptions {
   draftEverySec?: number
   /** A pause this long ends the sentence. */
   endSilenceSec?: number
-  /** Nonstop talking gets cut into sentences this long (Whisper's limit is 30 s). */
+  /** Nonstop talking gets cut into sentences this long, so no single pass gets slow. */
   maxSegmentSec?: number
   /** Audio kept from before speech starts, so the first word isn't clipped. */
   preRollSec?: number
@@ -41,7 +41,7 @@ export class Segmenter {
 
   constructor({
     sampleRate = 16000,
-    draftEverySec = 1,
+    draftEverySec = 0.5,
     endSilenceSec = 0.7,
     maxSegmentSec = 20,
     preRollSec = 0.3,

@@ -21,25 +21,25 @@ describe('Segmenter', () => {
     expect(events.every((e) => e === 'none')).toBe(true)
   })
 
-  test('asks for a draft after one second of talking', () => {
+  test('asks for a draft after half a second of talking', () => {
     const seg = new Segmenter()
-    const events = feed(seg, 1, true)
+    const events = feed(seg, 0.5, true)
     expect(events.at(-1)).toBe('draft')
     expect(events.slice(0, -1).every((e) => e === 'none')).toBe(true)
   })
 
-  test('asks for the next draft only after another second of new audio', () => {
+  test('asks for the next draft only after another half second of new audio', () => {
     const seg = new Segmenter()
-    feed(seg, 1, true)
+    feed(seg, 0.5, true)
     seg.takeDraft()
-    const events = feed(seg, 1, true)
+    const events = feed(seg, 0.5, true)
     expect(events.slice(0, -1).every((e) => e === 'none')).toBe(true)
     expect(events.at(-1)).toBe('draft')
   })
 
   test('keeps asking for a draft until one is taken', () => {
     const seg = new Segmenter()
-    feed(seg, 1, true)
+    feed(seg, 0.5, true)
     expect(feed(seg, 0.2, true)).toEqual(['draft', 'draft'])
   })
 

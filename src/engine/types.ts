@@ -1,6 +1,6 @@
 /**
- * Anything that turns 16 kHz mono audio into text. Whisper is the v1 engine;
- * swapping in another model (Moonshine, a bigger Whisper) means writing
+ * Anything that turns 16 kHz mono audio into text. Any Transformers.js
+ * speech model runs through WorkerEngine; a different runtime means writing
  * another class with this shape.
  */
 export interface SpeechEngine {
