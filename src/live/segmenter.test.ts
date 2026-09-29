@@ -43,10 +43,10 @@ describe('Segmenter', () => {
     expect(feed(seg, 0.2, true)).toEqual(['draft', 'draft'])
   })
 
-  test('finalizes after 0.7 s of silence following speech', () => {
+  test('finalizes after 0.5 s of silence following speech', () => {
     const seg = new Segmenter()
     feed(seg, 0.5, true)
-    const events = feed(seg, 0.7, false)
+    const events = feed(seg, 0.5, false)
     expect(events.at(-1)).toBe('finalize')
     expect(events.slice(0, -1)).not.toContain('finalize')
   })

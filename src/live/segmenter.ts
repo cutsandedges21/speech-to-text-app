@@ -42,7 +42,7 @@ export class Segmenter {
   constructor({
     sampleRate = 16000,
     draftEverySec = 0.5,
-    endSilenceSec = 0.7,
+    endSilenceSec = 0.5,
     maxSegmentSec = 20,
     preRollSec = 0.3,
     postRollSec = 0.3,

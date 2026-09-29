@@ -38,7 +38,7 @@ mic ──► audio/mic.ts ──► live/liveTranscriber.ts ──► engine/wo
 |---|---|
 | `src/audio/mic.ts` | Mic capture via an AudioWorklet (`public/mic-processor.js`), resampled to 16 kHz |
 | `src/audio/silence.ts` | Speech/silence detector that adapts to background noise |
-| `src/live/segmenter.ts` | Splits audio into sentences: draft every 0.5 s, sentence ends after 0.7 s of silence or 20 s of talking |
+| `src/live/segmenter.ts` | Splits audio into sentences: draft every 0.5 s, sentence ends after 0.5 s of silence or 20 s of talking |
 | `src/live/liveTranscriber.ts` | Runs the model one job at a time; finished sentences are never dropped |
 | `src/live/filter.ts` | Removes silence junk (`[BLANK_AUDIO]`, a lone "Thank you.") |
 | `src/engine/speech.worker.ts` | Loads and runs the model; deletes cached files of models the app no longer uses |
